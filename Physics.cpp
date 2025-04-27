@@ -18,7 +18,7 @@ void Physics::step(float dt) {
         b->integrate(dt);
 
     //ball collisions. Not elastic
-    const float restitutionBalls = 0.05f;
+    const float restitutionBalls = 0.001f;
     Collision a;  
     for (size_t i = 0; i < balls.size(); ++i) {
         for (size_t j = i+1; j < balls.size(); ++j) {
