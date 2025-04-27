@@ -76,3 +76,5 @@ This is a multi-threaded 2D physics engine in C++. It was built using Newtonian 
 
 ## Authors
 - Jason Majoros
+
+V1 Completion April 2025
