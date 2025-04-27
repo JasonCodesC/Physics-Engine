@@ -29,10 +29,11 @@ This is a multi-threaded 2D physics engine in C++. It was built using Newtonian 
 - **Configurable Parameters**  
   • Mass, radius, gravity, restitution coefficients (energy loss), world size  
 - **Easy Build**  
-  • Single Makefile (`make release`) with `-O3 -std=c++2b`  
+  • Single Makefile (`make release`) with `-O3 -std=c++2b`
   • Cross-platform SFML dependency
 - **Fashion**
   • Blue and Maize Balls for an optimal user viewing experience
+
 
 ## Installation
 
@@ -59,16 +60,16 @@ This is a multi-threaded 2D physics engine in C++. It was built using Newtonian 
 ## Project Structure
 ```
 /project-root
-│── Ball.h             # Declaration of the Ball class (position, velocity, integration)
-│── Ball.cpp           # Ball class implementation (force/impulse application & Euler integrator)
-│── Vector2.h          # 2D vector math declarations (operators, dot, normalize, etc.)
-│── Vector2.cpp        # 2D vector math implementations
-│── Physics.h          # Physics engine interface (gravity, timestep, world bounds)
-│── Physics.cpp        # Physics engine implementation (apply forces, integrate, wall‐bounce)
-│── Collisions.h       # Collision API (detect & resolve ball–ball collisions)
-│── Collisions.cpp     # Collision implementation (impulse resolution, positional correction)
+│── Ball.h             # Ball API
+│── Ball.cpp           # Ball class implementation
+│── Vector2.h          # 2D vector math API
+│── Vector2.cpp        # 2D vector math implementations 
+│── Physics.h          # Physics engine API
+│── Physics.cpp        # Physics engine implementation
+│── Collisions.h       # Collision API
+│── Collisions.cpp     # Collision implementation
 │── main.cpp           # Entry point: threading, input handling, SFML rendering, drag/throw
-│── Makefile           # Build script (g++ flags, SFML include/libs, ‘make release’ target)
+│── Makefile           # Makefile for compiling
 │── README.md          # Project overview, features, build instructions, usage guide
 
 ```
