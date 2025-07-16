@@ -7,7 +7,7 @@ CXXFLAGS := -std=c++2b -O3 -I$(PREFIX)/include
 # Linker flags: SFML libraries and prefix
 LDFLAGS := -L$(PREFIX)/lib -lsfml-window -lsfml-graphics -lsfml-system
 
-SRCS := main.cpp Ball.cpp Physics.cpp Collisions.cpp Vector2.cpp
+SRCS := main.cpp Ball.cpp Physics.cpp
 OBJS := $(SRCS:.cpp=.o)
 TARGET := phys_sim
 

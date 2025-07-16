@@ -10,6 +10,8 @@ public:
     void addBall(Ball* b);
     void step(float dt);
 
+    [[nodiscard]] const std::vector<Ball*>& getBalls() const { return balls; }
+
 private:
     Vector2 gravity;
     float worldWidth, worldHeight;

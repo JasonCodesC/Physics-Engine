@@ -1,4 +1,3 @@
-// main.cpp
 #include "Physics.h"
 #include "Ball.h"
 #include "Vector2.h"
@@ -9,52 +8,55 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <vector>
+
+// Constants
+constexpr unsigned int WINDOW_W = 1200;
+constexpr unsigned int WINDOW_H = 800;
+constexpr float SCALE = 50.0f;
+constexpr float PHYSICS_DT = 1.0f / 60.0f;
 
 int main() {
-    const unsigned int windowW = 1200;
-    const unsigned int windowH = 800;
-    const float scale = 50.0f;
+    // Physics world
+    Physics phys(Vector2(0.0f, -9.81f), WINDOW_W / SCALE, WINDOW_H / SCALE);
 
-    //Our world: gravity, width and height
-    Physics phys(Vector2(0.0f, -19.81f), windowW / scale, windowH / scale);
+    // Create balls
+    std::vector<Ball> balls;
+    balls.emplace_back(0.95f, 1.0f, Vector2(3.0f, 9.0f));
+    balls.emplace_back(0.95f, 1.0f, Vector2(18.0f, 9.0f));
+    balls.emplace_back(0.75f, 0.7f, Vector2(10.0f, 15.0f)); // Third ball
 
-    //Create balls
-    Ball b1(0.95f, 1.0f, Vector2(3.0f, 9.0f));
-    Ball b2(0.95f, 1.0f, Vector2(18.0f, 9.0f));
-    phys.addBall(&b1);
-    phys.addBall(&b2);
-
-    //SFML window
-    sf::RenderWindow window(sf::VideoMode(sf::Vector2u(windowW, windowH)),"2D Physics Drag & Throw");
-    //Set FPS 
-    window.setFramerateLimit(60);
-    
-    //font for velocity display
-    sf::Font font;
-    bool fontLoaded = false;
-    if (font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf")) {
-        fontLoaded = true;
+    for (auto& b : balls) {
+        phys.addBall(&b);
     }
-    
+
+    // SFML window
+    sf::RenderWindow window(sf::VideoMode({WINDOW_W, WINDOW_H}), "2D Physics Drag & Throw");
+    window.setFramerateLimit(60);
+
+    // Font for velocity display
+    sf::Font font;
+    if (!font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf")) {
+        // Handle font loading error if necessary
+    }
+
     // Thread synchronization
     std::mutex physicsMutex;
     std::atomic<bool> running(true);
-    const float physicsDt = 1.0f / 60.0f;
 
-    // Launch physics thread
+    // Physics thread
     std::thread physicsThread([&] {
         while (running) {
             {
                 std::lock_guard<std::mutex> lock(physicsMutex);
-                phys.step(physicsDt);
+                phys.step(PHYSICS_DT);
             }
-            std::this_thread::sleep_for(std::chrono::duration<float>(physicsDt));
+            std::this_thread::sleep_for(std::chrono::duration<float>(PHYSICS_DT));
         }
     });
 
     Ball* dragged = nullptr;
     Vector2 lastMouseWorldPos;
-    Vector2 dragVel(0.0f, 0.0f);
 
     while (window.isOpen()) {
         // Event handling
@@ -65,96 +67,78 @@ int main() {
                 window.close();
             }
 
-            //Mouse Clicked
-            if (auto* mbp = evt.getIf<sf::Event::MouseButtonPressed>()) {
+            if (auto mbp = evt.getIf<sf::Event::MouseButtonPressed>()) {
                 if (mbp->button == sf::Mouse::Button::Left) {
-                    Vector2 clickPos(mbp->position.x / scale, (windowH - mbp->position.y) / scale);
+                    Vector2 clickPos(mbp->position.x / SCALE, (WINDOW_H - mbp->position.y) / SCALE);
                     std::lock_guard<std::mutex> lock(physicsMutex);
-                    if ((b1.getPosition() - clickPos).length() < b1.getRadius())
-                        dragged = &b1;
-                    else if ((b2.getPosition() - clickPos).length() < b2.getRadius())
-                        dragged = &b2;
-                    if (dragged)
-                        lastMouseWorldPos = clickPos;
+                    for (auto& b : balls) {
+                        if ((b.getPosition() - clickPos).lengthSquared() < b.getRadius() * b.getRadius()) {
+                            dragged = &b;
+                            lastMouseWorldPos = clickPos;
+                            break;
+                        }
+                    }
                 }
             }
 
-            //Mouse Released
-            if (auto* mbr = evt.getIf<sf::Event::MouseButtonReleased>()) {
+            if (auto mbr = evt.getIf<sf::Event::MouseButtonReleased>()) {
                 if (mbr->button == sf::Mouse::Button::Left && dragged) {
-                    {
-                        std::lock_guard<std::mutex> lock(physicsMutex);
-                        dragged->setVelocity(dragVel);
-                    }
                     dragged = nullptr;
                 }
             }
         }
 
-        //Moving ball and changing velocity while ball is dragged
+        // Dragging logic
         if (dragged) {
             sf::Vector2i mp = sf::Mouse::getPosition(window);
-            Vector2 worldPos(mp.x / scale, (windowH - mp.y) / scale);
-            dragVel = (worldPos - lastMouseWorldPos) / physicsDt;
-            {
-                std::lock_guard<std::mutex> lock(physicsMutex);
-                dragged->setPosition(worldPos);
-            }
+            Vector2 worldPos(mp.x / SCALE, (WINDOW_H - mp.y) / SCALE);
+            Vector2 dragVel = (worldPos - lastMouseWorldPos) / PHYSICS_DT;
+            std::lock_guard<std::mutex> lock(physicsMutex);
+            dragged->setPosition(worldPos);
+            dragged->setVelocity(dragVel);
             lastMouseWorldPos = worldPos;
         }
 
-        //Render
-        Vector2 p1, p2, v1, v2;
-        {
-            std::lock_guard<std::mutex> lock(physicsMutex);
-            p1 = b1.getPosition();
-            p2 = b2.getPosition();
-            v1 = b1.getVelocity();
-            v2 = b2.getVelocity();
-        }
+        // Rendering
         window.clear(sf::Color::Black);
 
-        sf::CircleShape shape1(b1.getRadius() * scale);
-        sf::CircleShape shape2(b2.getRadius() * scale);
-        shape1.setFillColor(sf::Color::Blue);
-        shape2.setFillColor(sf::Color::Yellow);
-        shape1.setOrigin(sf::Vector2f(b1.getRadius()*scale, b1.getRadius()*scale));
-        shape2.setOrigin(sf::Vector2f(b2.getRadius()*scale, b2.getRadius()*scale));
-        shape1.setPosition(sf::Vector2f(p1.x*scale, windowH - p1.y*scale));
-        shape2.setPosition(sf::Vector2f(p2.x*scale, windowH - p2.y*scale));
-        window.draw(shape1);
-        window.draw(shape2);
+        std::vector<sf::CircleShape> shapes;
+        {
+            std::lock_guard<std::mutex> lock(physicsMutex);
+            for (const auto& b : balls) {
+                sf::CircleShape shape(b.getRadius() * SCALE);
+                shape.setOrigin({b.getRadius() * SCALE, b.getRadius() * SCALE});
+                shape.setPosition({b.getPosition().x * SCALE, WINDOW_H - b.getPosition().y * SCALE});
+                if (&b == &balls[0]) shape.setFillColor(sf::Color::Blue);
+                else if (&b == &balls[1]) shape.setFillColor(sf::Color::Yellow);
+                else shape.setFillColor(sf::Color::Green); // Third ball color
+                shapes.push_back(shape);
+            }
+        }
 
-        //print ball velocities
-        if (fontLoaded) {
-            std::ostringstream oss1, oss2;
-            oss1 << std::fixed << std::setprecision(2)
-                << "Blue Velocity: X:"<<v1.x<<" Y:"<<v1.y<<"";
+        for (const auto& shape : shapes) {
+            window.draw(shape);
+        }
 
-            oss2 << std::fixed << std::setprecision(2)
-                << "Yellow Velocity: X:"<<v2.x<<" Y:"<<v2.y<<"";
-
-            sf::Text textBlue(font);
-            textBlue.setString(oss1.str());
-            textBlue.setCharacterSize(14);
-            textBlue.setFillColor(sf::Color::Blue);
-            auto boundsBlue = textBlue.getLocalBounds();
-            textBlue.setPosition(sf::Vector2f(windowW - boundsBlue.size.x - 10.f, 10.f));
-            window.draw(textBlue);
-
-            sf::Text textYellow(font);
-            textYellow.setString(oss2.str());
-            textYellow.setCharacterSize(14);
-            textYellow.setFillColor(sf::Color::Yellow);
-            auto boundsYellow = textYellow.getLocalBounds();
-            textYellow.setPosition(sf::Vector2f(windowW - boundsYellow.size.x - 10.f, 10.f + boundsBlue.size.y + 5.f));
-            window.draw(textYellow);
+        // Display velocities
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(2);
+        int y_offset = 0;
+        for (const auto& b : balls) {
+            oss.str("");
+            oss << "Velocity => (X: " << b.getVelocity().x << ", Y: " << b.getVelocity().y << ")";
+            sf::Text text(font, oss.str(), 14);
+            text.setPosition({10.f, 10.f + y_offset});
+            if (&b == &balls[0]) text.setFillColor(sf::Color::Blue);
+            else if (&b == &balls[1]) text.setFillColor(sf::Color::Yellow);
+            else text.setFillColor(sf::Color::Green);
+            window.draw(text);
+            y_offset += 20;
         }
 
         window.display();
     }
 
-    //Join threads and return to exit safely
     running = false;
     physicsThread.join();
     return 0;
