@@ -34,6 +34,7 @@ This is a multi-threaded 2D physics engine in C++. It was built using Newtonian 
   • Cross-platform SFML dependency
 - **Fashion**
   • Blue and Maize Balls for an optimal user viewing experience
+  • A third green ball was added only to show the increase in performance (Go Blue!)
 
 
 ## Installation
@@ -74,7 +75,7 @@ This is a multi-threaded 2D physics engine in C++. It was built using Newtonian 
 ```
 
 ## V1
-V1 is a clanky physics engine, it is multithreaded and runs at 60 fps but the collisions feel wrong. 
+V1 is a clanky physics engine, it is multithreaded and runs at 60 fps but the collisions feel wrong. The collisions dont feel hard, the balls almost seem to go through each other for a split second and due to that the force calculations are wrong.
 
 ## V2
 V2 runs very smooth. I added better error checking by using [[nodiscard]] and fixed some logic. I used constexpr in lots of places to make as many calculations happen at compile time as possible, as every millisecond counts. And all of the constexpr functions are implicitly inlined resulting in greater optimization. Other functions that couldn't benefit from constexpr now have the inline keyword, resulting in a huge performance boost due to the code being inlined at compile time so we no longer need to use branch instructions nearly as frequently.
@@ -82,5 +83,7 @@ V2 runs very smooth. I added better error checking by using [[nodiscard]] and fi
 ## Authors
 - Jason Majoros
 
-V1 Completion April 2025
-V2 Completion July 2025
+# V1 
+Completion April 2025
+# V2 
+Completion July 2025
